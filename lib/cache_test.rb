@@ -199,6 +199,7 @@ module AGW #:nodoc:
       end
 
       def delete(name, options = nil) #:nodoc:
+        p "deleting"
         super
         @expired << name
       end
@@ -218,6 +219,7 @@ module AGW #:nodoc:
       def expired?(name)
         @expired.include?(name) || @expiration_patterns.detect { |matcher| name =~ matcher }
       end
+
     end
 
     # This modulse can override the default page caching framework
@@ -229,24 +231,23 @@ module AGW #:nodoc:
     module PageCaching
       module ClassMethods #:nodoc:
         def cache_page(content, path)
-          test_page_cached << path
+         cache_store.write( path, content )
         end
 
         def expire_page(path)
-          test_page_expired << path
+          cache_store.delete path
         end
       
         def cached?(path)
-          test_page_cached.include?(path)
+          cache_store.cached?(path)
         end
 
         def expired?(path)
-          test_page_expired.include?(path)
+          cache_store.expired?(path)
         end
       
         def reset_page_cache!
-          test_page_cached.clear
-          test_page_expired.clear
+          cache_store.reset
         end
       end
       
@@ -399,7 +400,7 @@ module AGW #:nodoc:
       # paramaters.
       #
       # This is a shortcut method to +expire+.
-      def expire_action(action)
+      def do_expire_action(action)
         action = { :action => action } unless action.is_a?(Hash)
         expire(action)
       end
@@ -426,12 +427,16 @@ module AGW #:nodoc:
         
         # See if +ActionController::Base+ was told to cache our page.
         def matches?(block)
-          block.call 
+          block.call
           return ActionController::Base.cached?(@url)
         end
 
         def failure_message
-          "Expected block to cache the page #{@url.inspect}"
+          if ActionController::Base.cache_store.cached.any?
+            "Expected block to cache the page #{@url.inspect} but it only cached #{ActionController::Base.cache_store.cached.to_yaml}"
+          else
+            "Expected block to expire the page #{@url.inspect} but it cached nothing"
+          end
         end
 
         def negative_failure_message
@@ -457,12 +462,12 @@ module AGW #:nodoc:
 
         def matches?(block)
           block.call 
-          return ActionController::Base.expired?(@url)
+          return ActionController::Base.cache_store.expired?(@url)
         end
 
         def failure_message
-          if ActionController::Base.test_page_expired.any?
-            "Expected block to expire the page #{@url.inspect} but it only expired #{ActionController::Base.test_page_expired.to_yaml}"
+          if ActionController::Base.cache_store.expired.any?
+            "Expected block to expire the page #{@url.inspect} but it only expired #{ActionController::Base.cache_store.expired.to_yaml}"
           else
             "Expected block to expire the page #{@url.inspect} but it expired nothing"
           end
