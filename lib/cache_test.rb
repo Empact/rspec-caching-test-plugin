@@ -39,14 +39,6 @@ module AGW #:nodoc:
   # +cache_action+ turns your +action+ argument into the right +name+ using
   # +fragment_cache_key+.
   #
-  # == Installation
-  #
-  # This is almost a drop-in solution. You only need to set up this plugin's
-  # test hooks by calling its +setup+ method, preferably in your
-  # <tt>spec_helper.rb</tt> file like so:
-  #
-  #   AGW::CacheTest.setup
-  #
   # == Example
   # 
   # Consider the following example specification:
@@ -84,37 +76,11 @@ module AGW #:nodoc:
   # License::   distributed under the same terms as Ruby.
   module CacheTest
     
-    # Call this method to set up this caching mechanism in your code.
-    # Ideally this would go into your +spec_helper.rb+.
-    #
-    # This method enables caching and hooks into the fragment and page
-    # caching systems to let all caching flow through this plugin. It also
-    # enables the rspec matchers.
-    #
-    # This method must be called to activate the plugin:
-    #
-    #   AGW::CacheTest.setup
-    # 
-    #--
-    # TODO: somehow drop this in init.rb
-    def self.setup
-      # Turn on caching
-      ActionController::Base.perform_caching = true
-
-      # Hook into the fragment and page caching mechanisms
-      ActionController::Base.cache_store = AGW::CacheTest::TestStore.new
-      ActionController::Base.class_eval do
-        include AGW::CacheTest::PageCaching
-      end
-      
-      # Make our matchers available to rspec via Test::Unit
-      Test::Unit::TestCase.class_eval do
-        include Matchers
-      end
+    def self.setup #:nodoc:
+      #no-op for backwards compat, functionality moved into init.rb
     end
     
-
-    # This modulse can override the default page caching framework
+    # This module can override the default page caching framework
     # and intercept all caching and expiration requests to keep
     # track of what the apps caches and expires.
     #
