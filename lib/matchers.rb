@@ -44,7 +44,7 @@ module AGW
         
       private
         def cache_key_for_name(name)
-          return @controller.fragment_cache_key @controller.params unless name
+          return @controller.fragment_cache_key(@controller.params) unless name
           if @type == :action && !name.is_a?(Hash)
             name = { :action => name, :controller => @controller.controller_name }
           end
