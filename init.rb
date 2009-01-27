@@ -1,1 +1,5 @@
-require 'cache_test' if RAILS_ENV == "test"
+if RAILS_ENV == 'test'
+  require 'cache_test'
+  require 'matchers'
+  require 'test_store'
+end
