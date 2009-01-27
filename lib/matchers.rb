@@ -22,6 +22,14 @@ module AGW
           query_cache_store(@key)
         end
         
+        def failure_message
+          "Expected block to #{failure_action} #{@type} #{@name.inspect} (#{@key}), but #{failure_reason}"
+        end
+
+        def negative_failure_message
+          "Expected block not to #{failure_action} #{@type} #{@name.inspect} (#{@key})"
+        end
+        
       private
         # override this method in the concrete subclasses
         def query_cache_store(key)
@@ -38,19 +46,19 @@ module AGW
       end
       
       class TestCacheCaches < AbstractCacheMatcher #:nodoc:
-        def failure_message
-          reason = if ActionController::Base.cache_store.cached.any?
+      private
+        def failure_reason
+          if ActionController::Base.cache_store.cached.any?
             "the cache only has #{ActionController::Base.cache_store.cached.to_yaml}."
           else
             "the cache is empty."
           end
-          "Expected block to cache #{@type} #{@name.inspect} (#{@key}), but #{reason}"
         end
-
-        def negative_failure_message
-          "Expected block not to cache #{@type} #{@name.inspect} (#{@key})"
+        
+        def failure_action
+          'cache'
         end
-      private
+      
         def query_cache_store(key)
           ActionController::Base.cache_store.cached?(key)
         end
@@ -92,19 +100,19 @@ module AGW
       alias_method :cache_fragment, :cache
       
       class TestCacheExpires < AbstractCacheMatcher #:nodoc:
-        def failure_message
-          reason = if ActionController::Base.cache_store.expired.any?
+      private
+        def failure_reason
+          if ActionController::Base.cache_store.expired.any?
             "the cache has only expired #{ActionController::Base.cache_store.expired.to_yaml}."
           else
             "nothing was expired."
           end
-          "Expected block to expire action #{@name.inspect} (#{@key}), but #{reason}"
         end
-
-        def negative_failure_message
-          "Expected block not to expire #{@name.inspect} (#{@key})"
+        
+        def failure_action
+          'expire'
         end
-      private
+        
         def query_cache_store(key)
           ActionController::Base.cache_store.expired?(key)
         end
@@ -122,9 +130,8 @@ module AGW
       # paramaters.
       #
       # This is a shortcut method to +expire+.
-      def do_expire_action(action)
-        action = { :action => action } unless action.is_a?(Hash)
-        expire(action)
+      def expire_action(action)
+        TestCacheExpires.new(action, controller, :action)
       end
 
       # See if a fragment is expired

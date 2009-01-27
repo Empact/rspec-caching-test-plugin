@@ -15,6 +15,7 @@ describe 'Matchers' do
   before(:each) do
     mock_store = mock('Store',
       :cached => [],
+      :expired => [],
       :reset => nil
     )
     ActionController::Base.stub!(:cache_store).and_return(mock_store)
@@ -75,6 +76,14 @@ describe 'Matchers' do
   end
   
   describe 'for fragment expiration' do
+    it 'should mention fragment in its failure message' do
+      expire_fragment('ladida').failure_message.should =~ /fragment/
+    end
+    
+    it 'should mention fragment in its negative failure message' do
+      expire_fragment('ladida').negative_failure_message.should =~ /fragment/
+    end
+    
     describe 'using an implicit cache key' do
       it 'should query the cache store with the params of the last request' do
         controller.params = {:controller => 'matcher', :action => 'tralala'}
@@ -89,6 +98,16 @@ describe 'Matchers' do
           controller.params = {:controller => 'matcher', :action => 'right_params'}
         })
       end
+    end
+  end
+  
+  describe 'for action expiration' do
+    it 'should mention “action” in its failure message' do
+      expire_action(:update).failure_message.should =~ /expire\ action/
+    end
+    
+    it 'should mention “action” in its negative failure message' do
+      expire_action(:update).negative_failure_message.should =~ /expire\ action/
     end
   end
   
