@@ -17,7 +17,7 @@ module AGW
         end
         
         def matches?(block)
-          block.call
+          temporarily_enable_caching { block.call }
           @controller = @example_group.controller
           @key = cache_key_for_name(@name)
           query_cache_store(@key)
@@ -32,6 +32,14 @@ module AGW
         end
         
       private
+      
+        def temporarily_enable_caching
+          old_setting = ActionController::Base.perform_caching
+          ActionController::Base.perform_caching = true
+          yield
+          ActionController::Base.perform_caching = old_setting
+        end
+        
         # override this method in the concrete subclasses
         def query_cache_store(key)
           raise NotImplementedError
@@ -148,7 +156,7 @@ module AGW
       end
       alias_method :expire_fragment, :expire
       
-      class CachePage #:nodoc:
+      class CachePage < AbstractCacheMatcher #:nodoc:
         def initialize(url)
           @url = url
           ActionController::Base.reset_page_cache!
@@ -156,7 +164,7 @@ module AGW
         
         # See if +ActionController::Base+ was told to cache our page.
         def matches?(block)
-          block.call
+          temporarily_enable_caching { block.call }
           return ActionController::Base.cached?(@url)
         end
 
@@ -190,7 +198,7 @@ module AGW
         end
 
         def matches?(block)
-          block.call 
+          temporarily_enable_caching { block.call }
           return ActionController::Base.cache_store.expired?(@url)
         end
 
