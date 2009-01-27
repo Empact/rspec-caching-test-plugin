@@ -12,6 +12,7 @@ module AGW
         def initialize(name, controller = nil)
           @name       = name
           @controller = controller
+          @key = cache_key_for_name(name)
           ActionController::Base.cache_store.reset
         end
 
@@ -24,7 +25,6 @@ module AGW
         # request.
         def matches?(block)
           block.call
-          @key = @name.is_a?(String) ? @name : @controller.fragment_cache_key(@name)
           return ActionController::Base.cache_store.cached?(@key)
         end
 
@@ -39,6 +39,12 @@ module AGW
 
         def negative_failure_message
           "Expected block not to cache action #{@name.inspect} (#{@key})"
+        end
+        
+      private
+        def cache_key_for_name(name)
+          return @controller.fragment_cache_key @controller.params unless name
+          name.is_a?(String) ? name : @controller.fragment_cache_key(name)
         end
       end
 
@@ -61,13 +67,20 @@ module AGW
       #
       # The name you pass in can be any name you have given your fragment.
       # This would typically be a +String+.
+      # If you don't pass in a cache key it will take the params from the last
+      # request to generate a key, similar to calling
+      # ActionView::Helpers::CacheHelper#cache without arguments, e.g. in a 
+      # +cache do … end+ block in your view.
+      # It will also generate a 
       #
       # Usage:
       #
       #   lambda { get :index }.should cache('my_caching')
+      #
+      #   lambda { get :index }.should cache
       # 
-      def cache(name)
-        TestCacheCaches.new(name)
+      def cache(name=nil)
+        TestCacheCaches.new(name, controller)
       end
       alias_method :cache_fragment, :cache
       
