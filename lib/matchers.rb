@@ -13,7 +13,6 @@ module AGW
           @name       = name
           @controller = controller
           @type = type
-          @key = cache_key_for_name(name)
           ActionController::Base.cache_store.reset
         end
 
@@ -26,6 +25,7 @@ module AGW
         # request.
         def matches?(block)
           block.call
+          @key = cache_key_for_name(@name)
           return ActionController::Base.cache_store.cached?(@key)
         end
 

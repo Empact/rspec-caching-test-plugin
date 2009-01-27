@@ -28,7 +28,7 @@ describe 'Matchers' do
   # can access the controller from the example group
   attr_reader :controller
 
-  describe 'fragment caching' do
+  describe 'for fragment caching' do
     it 'should query the cache store by simple string key' do
       ActionController::Base.cache_store.should_receive(:cached?).with('named_fragment')
       cache_fragment('named_fragment').matches?(Proc.new{})
@@ -39,11 +39,20 @@ describe 'Matchers' do
       cache_fragment(:controller => 'matcher', :action => 'ladida').matches?(Proc.new{})
     end
     
-    it 'should query the cache store with the params of the last request
-    when using the implicit cache key in the matcher' do
-      controller.params = {:controller => 'matcher', :action => 'tralala'}
-      ActionController::Base.cache_store.should_receive(:cached?).with('views/test.host/matcher/tralala')
-      cache_fragment.matches?(Proc.new{})
+    describe 'using an implicit cache key' do
+      it 'should query the cache store with the params of the last request' do
+        controller.params = {:controller => 'matcher', :action => 'tralala'}
+        ActionController::Base.cache_store.should_receive(:cached?).with('views/test.host/matcher/tralala')
+        cache_fragment.matches?(Proc.new{})
+      end
+      
+      it 'should use the params after calling the block the matcher ' do
+        controller.params = {:controller => 'matcher', :action => 'wrong_params'}
+        ActionController::Base.cache_store.should_receive(:cached?).with('views/test.host/matcher/right_params')
+        cache_fragment.matches?(Proc.new{
+          controller.params = {:controller => 'matcher', :action => 'right_params'}
+        })
+      end
     end
     
     it 'should mention fragment in its failure message' do
@@ -55,7 +64,7 @@ describe 'Matchers' do
     end
   end
   
-  describe 'action caching' do
+  describe 'for action caching' do
     it 'should mention “action” in its failure message' do
       cache_action(:update).failure_message.should =~ /cache\ action/
     end
@@ -63,6 +72,10 @@ describe 'Matchers' do
     it 'should mention “action” in its negative failure message' do
       cache_action(:update).negative_failure_message.should =~ /cache\ action/
     end
+  end
+  
+  describe 'for fragment expiration' do
+    
   end
   
 end
