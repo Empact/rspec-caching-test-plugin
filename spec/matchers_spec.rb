@@ -11,18 +11,27 @@ describe 'Matchers' do
   ActionController::Routing::Routes.draw do |map|
     map.connect ':controller/:action/:id'
   end
+  
   class MatcherController < ActionController::Base;end
-  before(:each) do
+  class OtherController < ActionController::Base;end
+  
+  def initialize_controller(controller_class)
+    @controller = controller_class.new
+    @controller.process_test ActionController::TestRequest.new :controller => @controller.controller_name
+  end
+  
+  def stub_cache_store
     mock_store = mock('Store',
       :cached => [],
       :expired => [],
       :reset => nil
     )
     ActionController::Base.stub!(:cache_store).and_return(mock_store)
-    
-    @controller = MatcherController.new
-    @controller.params = {:controller => @controller.controller_name}
-    @controller.process_test ActionController::TestRequest.new
+  end
+  
+  before(:each) do
+    stub_cache_store
+    initialize_controller MatcherController
   end
   
   # to simulate a controller/integration test environment in which the matchers
@@ -91,11 +100,19 @@ describe 'Matchers' do
         expire_fragment.matches?(Proc.new{})
       end
       
-      it 'should use the params after calling the block the matcher ' do
+      it 'should use the params after calling the block the matcher matches on' do
         controller.params = {:controller => 'matcher', :action => 'wrong_params'}
         ActionController::Base.cache_store.should_receive(:expired?).with('views/test.host/matcher/right_params')
         expire_fragment.matches?(Proc.new{
           controller.params = {:controller => 'matcher', :action => 'right_params'}
+        })
+      end
+      
+      it 'should use the controller after calling the block so matching works in integration tests' do
+        initialize_controller(MatcherController)
+        ActionController::Base.cache_store.should_receive(:expired?).with('views/test.host/other')
+        expire_fragment.matches?(Proc.new{
+          initialize_controller(OtherController)
         })
       end
     end

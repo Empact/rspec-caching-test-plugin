@@ -9,15 +9,16 @@ module AGW
     # something else.
     module Matchers
       class AbstractCacheMatcher #:nodoc:
-        def initialize(name, controller, type=:fragment)
+        def initialize(name, example_group, type=:fragment)
           @name       = name
-          @controller = controller
+          @example_group = example_group
           @type = type
           ActionController::Base.cache_store.reset
         end
         
         def matches?(block)
           block.call
+          @controller = @example_group.controller
           @key = cache_key_for_name(@name)
           query_cache_store(@key)
         end
@@ -75,7 +76,7 @@ module AGW
       # you can pass in a whole +Hash+ for +url_for+ defining all your
       # paramaters.
       def cache_action(action)
-        CachingMatcher.new(action, controller, :action)
+        CachingMatcher.new(action, self, :action)
       end
       
       # See if a fragment gets cached.
@@ -95,7 +96,7 @@ module AGW
       #   lambda { get :index }.should cache
       # 
       def cache(name=nil)
-        CachingMatcher.new(name, controller)
+        CachingMatcher.new(name, self)
       end
       alias_method :cache_fragment, :cache
       
@@ -131,7 +132,7 @@ module AGW
       #
       # This is a shortcut method to +expire+.
       def expire_action(action)
-        ExpirationMatcher.new(action, controller, :action)
+        ExpirationMatcher.new(action, self, :action)
       end
 
       # See if a fragment is expired
@@ -144,7 +145,7 @@ module AGW
       #   lambda { get :index }.should expire('my_cached_something')
       # 
       def expire(name=nil)
-        ExpirationMatcher.new(name, controller)
+        ExpirationMatcher.new(name, self)
       end
       alias_method :expire_fragment, :expire
       
