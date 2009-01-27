@@ -13,10 +13,14 @@ describe 'Matchers' do
   end
   class MatcherController < ActionController::Base;end
   before(:each) do
-    mock_store = mock('Store', :reset => nil)
+    mock_store = mock('Store',
+      :cached => [],
+      :reset => nil
+    )
     ActionController::Base.stub!(:cache_store).and_return(mock_store)
     
     @controller = MatcherController.new
+    @controller.params = {:controller => @controller.controller_name}
     @controller.process_test ActionController::TestRequest.new
   end
   
@@ -40,6 +44,24 @@ describe 'Matchers' do
       controller.params = {:controller => 'matcher', :action => 'tralala'}
       ActionController::Base.cache_store.should_receive(:cached?).with('views/test.host/matcher/tralala')
       cache_fragment.matches?(Proc.new{})
+    end
+    
+    it 'should mention fragment in its failure message' do
+      cache_fragment('ladida').failure_message.should =~ /fragment/
+    end
+    
+    it 'should mention fragment in its negative failure message' do
+      cache_fragment('ladida').negative_failure_message.should =~ /fragment/
+    end
+  end
+  
+  describe 'action caching' do
+    it 'should mention “action” in its failure message' do
+      cache_action(:update).failure_message.should =~ /cache\ action/
+    end
+    
+    it 'should mention “action” in its negative failure message' do
+      cache_action(:update).negative_failure_message.should =~ /cache\ action/
     end
   end
   

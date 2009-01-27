@@ -9,9 +9,10 @@ module AGW
     # something else.
     module Matchers
       class TestCacheCaches #:nodoc:
-        def initialize(name, controller = nil)
+        def initialize(name, controller, type=:fragment)
           @name       = name
           @controller = controller
+          @type = type
           @key = cache_key_for_name(name)
           ActionController::Base.cache_store.reset
         end
@@ -34,16 +35,19 @@ module AGW
           else
             "the cache is empty."
           end
-          "Expected block to cache action #{@name.inspect} (#{@key}), but #{reason}"
+          "Expected block to cache #{@type} #{@name.inspect} (#{@key}), but #{reason}"
         end
 
         def negative_failure_message
-          "Expected block not to cache action #{@name.inspect} (#{@key})"
+          "Expected block not to cache #{@type} #{@name.inspect} (#{@key})"
         end
         
       private
         def cache_key_for_name(name)
           return @controller.fragment_cache_key @controller.params unless name
+          if @type == :action && !name.is_a?(Hash)
+            name = { :action => name, :controller => @controller.controller_name }
+          end
           name.is_a?(String) ? name : @controller.fragment_cache_key(name)
         end
       end
@@ -59,8 +63,7 @@ module AGW
       # you can pass in a whole +Hash+ for +url_for+ defining all your
       # paramaters.
       def cache_action(action)
-        action = { :action => action } unless action.is_a?(Hash)
-        TestCacheCaches.new(action, controller)
+        TestCacheCaches.new(action, controller, :action)
       end
       
       # See if a fragment gets cached.
