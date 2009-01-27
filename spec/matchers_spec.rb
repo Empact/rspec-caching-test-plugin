@@ -39,8 +39,8 @@ describe 'Matchers' do
   attr_reader :controller
 
   describe 'for fragment caching' do
-    it 'should query the cache store by simple string key' do
-      ActionController::Base.cache_store.should_receive(:cached?).with('named_fragment')
+    it 'should query the cache store by simple string key with prefix' do
+      ActionController::Base.cache_store.should_receive(:cached?).with('views/named_fragment')
       cache_fragment('named_fragment').matches?(Proc.new{})
     end
     
@@ -91,6 +91,11 @@ describe 'Matchers' do
     
     it 'should mention fragment in its negative failure message' do
       expire_fragment('ladida').negative_failure_message.should =~ /fragment/
+    end
+    
+    it 'should prefix the given fragment name with the standard “views” prefix' do
+      ActionController::Base.cache_store.should_receive(:expired?).with('views/hoola-hoop')
+      expire_fragment('hoola-hoop').matches?(Proc.new{})
     end
     
     describe 'using an implicit cache key' do
