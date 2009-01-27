@@ -45,7 +45,7 @@ module AGW
         end
       end
       
-      class TestCacheCaches < AbstractCacheMatcher #:nodoc:
+      class CachingMatcher < AbstractCacheMatcher #:nodoc:
       private
         def failure_reason
           if ActionController::Base.cache_store.cached.any?
@@ -75,7 +75,7 @@ module AGW
       # you can pass in a whole +Hash+ for +url_for+ defining all your
       # paramaters.
       def cache_action(action)
-        TestCacheCaches.new(action, controller, :action)
+        CachingMatcher.new(action, controller, :action)
       end
       
       # See if a fragment gets cached.
@@ -95,11 +95,11 @@ module AGW
       #   lambda { get :index }.should cache
       # 
       def cache(name=nil)
-        TestCacheCaches.new(name, controller)
+        CachingMatcher.new(name, controller)
       end
       alias_method :cache_fragment, :cache
       
-      class TestCacheExpires < AbstractCacheMatcher #:nodoc:
+      class ExpirationMatcher < AbstractCacheMatcher #:nodoc:
       private
         def failure_reason
           if ActionController::Base.cache_store.expired.any?
@@ -131,7 +131,7 @@ module AGW
       #
       # This is a shortcut method to +expire+.
       def expire_action(action)
-        TestCacheExpires.new(action, controller, :action)
+        ExpirationMatcher.new(action, controller, :action)
       end
 
       # See if a fragment is expired
@@ -144,7 +144,7 @@ module AGW
       #   lambda { get :index }.should expire('my_cached_something')
       # 
       def expire(name=nil)
-        TestCacheExpires.new(name, controller)
+        ExpirationMatcher.new(name, controller)
       end
       alias_method :expire_fragment, :expire
       
