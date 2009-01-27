@@ -86,7 +86,7 @@ module AGW
       end
 
       def delete(name, options = nil) #:nodoc:
-        p "deleting"
+        logger.info("TestStore: deleted #{name} from cache")
         super
         @expired << name
       end
