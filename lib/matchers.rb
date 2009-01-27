@@ -8,27 +8,36 @@ module AGW
     # underlying concepts can easily be applied to <tt>Test::Unit</tt> or
     # something else.
     module Matchers
-      class TestCacheCaches #:nodoc:
+      class AbstractCacheMatcher #:nodoc:
         def initialize(name, controller, type=:fragment)
           @name       = name
           @controller = controller
           @type = type
           ActionController::Base.cache_store.reset
         end
-
-        # Call the block of code passed to this matcher and see if
-        # our action has been written to the cache.
-        #
-        # We determine the +fragment_cache_key+ here, taking the effort to
-        # pass in the controller to this class, because this method only
-        # works in the context of a request. Calling the block gives us that
-        # request.
+        
         def matches?(block)
           block.call
           @key = cache_key_for_name(@name)
-          return ActionController::Base.cache_store.cached?(@key)
+          query_cache_store(@key)
         end
-
+        
+      private
+        # override this method in the concrete subclasses
+        def query_cache_store(key)
+          raise NotImplementedError
+        end
+      
+        def cache_key_for_name(name)
+          return @controller.fragment_cache_key(@controller.params) unless name
+          if @type == :action && !name.is_a?(Hash)
+            name = { :action => name, :controller => @controller.controller_name }
+          end
+          name.is_a?(String) ? name : @controller.fragment_cache_key(name)
+        end
+      end
+      
+      class TestCacheCaches < AbstractCacheMatcher #:nodoc:
         def failure_message
           reason = if ActionController::Base.cache_store.cached.any?
             "the cache only has #{ActionController::Base.cache_store.cached.to_yaml}."
@@ -41,14 +50,9 @@ module AGW
         def negative_failure_message
           "Expected block not to cache #{@type} #{@name.inspect} (#{@key})"
         end
-        
       private
-        def cache_key_for_name(name)
-          return @controller.fragment_cache_key(@controller.params) unless name
-          if @type == :action && !name.is_a?(Hash)
-            name = { :action => name, :controller => @controller.controller_name }
-          end
-          name.is_a?(String) ? name : @controller.fragment_cache_key(name)
+        def query_cache_store(key)
+          ActionController::Base.cache_store.cached?(key)
         end
       end
 
@@ -87,26 +91,7 @@ module AGW
       end
       alias_method :cache_fragment, :cache
       
-      class TestCacheExpires #:nodoc:
-        def initialize(name, controller)
-          @name       = name
-          @controller = controller
-          ActionController::Base.cache_store.reset
-        end
-
-        # Call the block of code passed to this matcher and see if
-        # our action has been removed from the cache.
-        #
-        # We determine the +fragment_cache_key+ here, taking the effort to
-        # pass in the controller to this class, because this method only
-        # works in the context of a request. Calling the block gives us that
-        # request.
-        def matches?(block)
-          block.call
-          @key = @name.is_a?(String) ? @name : @controller.fragment_cache_key(@name)
-          return ActionController::Base.cache_store.expired?(@key)
-        end
-
+      class TestCacheExpires < AbstractCacheMatcher #:nodoc:
         def failure_message
           reason = if ActionController::Base.cache_store.expired.any?
             "the cache has only expired #{ActionController::Base.cache_store.expired.to_yaml}."
@@ -118,6 +103,10 @@ module AGW
 
         def negative_failure_message
           "Expected block not to expire #{@name.inspect} (#{@key})"
+        end
+      private
+        def query_cache_store(key)
+          ActionController::Base.cache_store.expired?(key)
         end
       end
 
@@ -147,7 +136,7 @@ module AGW
       # 
       #   lambda { get :index }.should expire('my_cached_something')
       # 
-      def expire(name)
+      def expire(name=nil)
         TestCacheExpires.new(name, controller)
       end
       alias_method :expire_fragment, :expire

@@ -75,7 +75,21 @@ describe 'Matchers' do
   end
   
   describe 'for fragment expiration' do
-    
+    describe 'using an implicit cache key' do
+      it 'should query the cache store with the params of the last request' do
+        controller.params = {:controller => 'matcher', :action => 'tralala'}
+        ActionController::Base.cache_store.should_receive(:expired?).with('views/test.host/matcher/tralala')
+        expire_fragment.matches?(Proc.new{})
+      end
+      
+      it 'should use the params after calling the block the matcher ' do
+        controller.params = {:controller => 'matcher', :action => 'wrong_params'}
+        ActionController::Base.cache_store.should_receive(:expired?).with('views/test.host/matcher/right_params')
+        expire_fragment.matches?(Proc.new{
+          controller.params = {:controller => 'matcher', :action => 'right_params'}
+        })
+      end
+    end
   end
   
 end
