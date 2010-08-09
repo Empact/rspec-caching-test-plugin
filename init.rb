@@ -8,10 +8,4 @@ if RAILS_ENV == 'test'
   ActionController::Base.class_eval do
     include AGW::CacheTest::PageCaching
   end
-  
-  # Make our matchers available to rspec via Test::Unit
-  Test::Unit::TestCase.class_eval do
-    include AGW::CacheTest::Matchers
-  end
-  
 end

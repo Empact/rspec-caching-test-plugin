@@ -14,6 +14,16 @@ This is basic but useful stuff, extracted from one of my projects. These are the
 
 Note that `cache_action` and `cache_fragment` are the same thing, only `cache_action` turns your `action` argument into the right `name` using `fragment_cache_key`. [See the Rails docs for more info](http://api.rubyonrails.org/classes/ActionController/Caching/Fragments.html#M000259 "Module: ActionController::Caching::Fragments").
 
+## Installation
+
+  script/plugin install git@github.com:Empact/rspec-caching-test-plugin.git
+
+Then add the following to your spec_helper config block:
+
+  config.include AGW::CacheTest::Matchers
+
+and you should be good to go.
+
 ## Example
 
 Consider the following example specification:
